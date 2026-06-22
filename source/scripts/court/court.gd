@@ -7,8 +7,8 @@ extends Node2D
 ##   - BallLayer：球
 ##   - UILayer：HUD / 触屏控件（CanvasLayer，不随相机滚动）
 ##
-## M1/M2 测试内容：生成 1 名玩家角色 + 2 名同队友 + 1 个球，
-## 演示 8 方向移动、跳跃、区域约束、拾球、投球与传球。
+## M1/M2/M3 测试内容：生成 1 名玩家角色 + 2 名同队友 + 3 名敌队角色 + 1 个球，
+## 演示移动/跳跃/拾球/投球/传球，以及投球命中敌方扣 HP、接球与击退。
 
 const CHARACTER_SCENE := preload("res://scenes/character.tscn")
 const BALL_SCENE := preload("res://scenes/ball.tscn")
@@ -49,6 +49,17 @@ func _spawn_characters() -> void:
 		mate.bounds_rects = [infield]
 		mate.global_position = infield.get_center() + Vector2(0, -32 + i * 64)
 		character_layer.add_child(mate)
+
+	# 敌队三名（右半场，无 AI，供 M3 投球命中/接球测试）
+	var enemy_infield := CourtGeometry.infield_rect(false)
+	for i in 3:
+		var foe: Character = CHARACTER_SCENE.instantiate()
+		foe.is_left_team = false
+		foe.team = Constants.Team.INDIA
+		foe.bounds_rects = [enemy_infield]
+		foe.global_position = enemy_infield.get_center() + Vector2(0, -48 + i * 48)
+		character_layer.add_child(foe)
+		foe.facing = Vector2.LEFT  # 面朝中线，便于观察朝向
 
 
 func _spawn_ball() -> void:

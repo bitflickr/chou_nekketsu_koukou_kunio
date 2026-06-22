@@ -8,7 +8,13 @@ extends Control
 ## 桌面端通过 project.godot 的 emulate_touch_from_mouse 也可用鼠标测试。
 
 const JOY_RADIUS := 48.0
-const BTN_RADIUS := 16.0
+const BTN_RADIUS := 20.0
+
+# A = 投球/传球/接球；B = 跳跃/闪避（SP-M03.7）
+const COLOR_A := Color(0.9, 0.3, 0.3, 0.35)
+const COLOR_A_DOWN := Color(1.0, 0.5, 0.5, 0.7)
+const COLOR_B := Color(0.3, 0.5, 0.9, 0.35)
+const COLOR_B_DOWN := Color(0.5, 0.7, 1.0, 0.7)
 
 var _joy_index := -1          # 控制摇杆的触点 index（-1 = 无）
 var _joy_base := Vector2.ZERO
@@ -28,9 +34,14 @@ func _ready() -> void:
 
 func _layout_buttons() -> void:
 	var s := get_viewport_rect().size
-	_btn_a_pos = Vector2(s.x - 24, s.y - 24)
-	_btn_b_pos = Vector2(s.x - 56, s.y - 40)
+	_btn_a_pos = Vector2(s.x - 28, s.y - 28)
+	_btn_b_pos = Vector2(s.x - 66, s.y - 46)
 	queue_redraw()
+
+
+## 指定动作按钮当前是否被按下（用于绘制按压反馈）。
+func _is_action_down(action: StringName) -> bool:
+	return action in _button_touches.values()
 
 
 func _gui_input(event: InputEvent) -> void:
@@ -95,10 +106,22 @@ func _update_joy_vector() -> void:
 
 
 func _draw() -> void:
-	# 动作按钮
-	draw_circle(_btn_b_pos, BTN_RADIUS, Color(0.3, 0.5, 0.9, 0.35))
-	draw_circle(_btn_a_pos, BTN_RADIUS, Color(0.9, 0.3, 0.3, 0.35))
+	# 动作按钮（带标签与按压反馈，SP-M03.7）
+	var a_down := _is_action_down(GameInput.THROW)
+	var b_down := _is_action_down(GameInput.JUMP)
+	_draw_button(_btn_b_pos, "B", COLOR_B_DOWN if b_down else COLOR_B)
+	_draw_button(_btn_a_pos, "A", COLOR_A_DOWN if a_down else COLOR_A)
 	# 摇杆
 	if _joy_index != -1:
 		draw_circle(_joy_base, JOY_RADIUS, Color(1, 1, 1, 0.12))
 		draw_circle(_joy_knob, 12.0, Color(1, 1, 1, 0.5))
+
+
+func _draw_button(center: Vector2, label: String, fill: Color) -> void:
+	draw_circle(center, BTN_RADIUS, fill)
+	draw_arc(center, BTN_RADIUS, 0, TAU, 24, Color(1, 1, 1, 0.5), 1.0)
+	var font := ThemeDB.fallback_font
+	var fsize := 12
+	var tw := font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, fsize).x
+	draw_string(font, center + Vector2(-tw * 0.5, fsize * 0.4), label, \
+			HORIZONTAL_ALIGNMENT_LEFT, -1, fsize, Color(1, 1, 1, 0.85))

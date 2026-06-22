@@ -109,6 +109,12 @@ func calc_damage(ball_speed: float, atk: int, def: int) -> float:
 	return ball_speed * (float(atk) / DAMAGE_ATK_DIVISOR) * (DAMAGE_DEF_DIVISOR / float(safe_def))
 
 
-## 计算接球速度阈值。
+## 计算接球速度阈值（px/帧）。
 func catch_threshold(def: int) -> float:
 	return CATCH_BASE + float(def) * CATCH_PER_DEF
+
+
+## 根据来球地面速度（px/秒）计算普通击退距离（px），线性映射到 KNOCKBACK_NORMAL 区间。
+func knockback_distance(speed_pps: float) -> float:
+	var t: float = clampf((speed_pps - 100.0) / 300.0, 0.0, 1.0)
+	return lerpf(float(KNOCKBACK_NORMAL.x), float(KNOCKBACK_NORMAL.y), t)

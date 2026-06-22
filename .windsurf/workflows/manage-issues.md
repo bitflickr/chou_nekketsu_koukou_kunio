@@ -8,17 +8,29 @@ description: 强制规则：GitHub Issues 管理规范
 
 仓库地址：https://github.com/bitflickr/chou_nekketsu_koukou_kunio
 
+## 0. Issue 的作用与范围（强制）
+
+**GitHub Issues 仅用于管理「问题与缺陷」，不用于管理功能开发进度。**
+
+- **属于 Issue 的范围**：
+  - **Bug / 缺陷**：已有功能出现的错误、崩溃、行为不符合预期。
+  - **风险 / 不确定性**：阻塞或威胁项目的开放问题、未决设计、外部依赖风险。
+- **不属于 Issue 的范围（不要创建 Issue）**：
+  - **功能需求 / 故事点 / 开发任务**：由 `plans/` 目录的路线图与故事点文档管理（`development_roadmap.md`、`plans/story_point/`），**不**登记为 Issue。
+  - **资产制作、工程/CI 等计划内任务**：同样在 `plans/` 中跟踪，除非它们演变成「问题/风险」。
+
+> 简言之：**计划要做什么 → 写进 `plans/`；出了什么问题 / 有什么风险 → 开 Issue。**
+
 ## 1. Issue 创建规则
 
-任何以下情况**必须**创建对应类型的 GitHub Issue：
+仅以下情况**必须**创建对应类型的 GitHub Issue：
 
 | 情况 | 使用模板 | 必打标签 |
 |------|----------|----------|
-| 发现 Bug | `bug_report.md` | `type:bug` + `area:*` + `P*` |
-| 识别新风险/不确定性 | `risk_item.md` | `type:risk` + `P*` |
-| 新增功能需求/设计决策 | `feature_request.md` | `type:feature` 或 `type:design` + `P*` |
-| 资产制作任务 | `feature_request.md` | `type:asset` + `area:*` |
-| 工程/CI 任务 | `feature_request.md` | `type:infra` |
+| 发现 Bug / 缺陷 | `bug_report.md` | `type:bug` + `area:*` + `P*` |
+| 识别新风险 / 不确定性 | `risk_item.md` | `type:risk` + `P*` |
+
+> 功能/设计/资产/工程任务**不再创建 Issue**，改在 `plans/` 中跟踪。`type:feature`/`type:design`/`type:asset`/`type:infra` 标签仅在某个问题/风险需要标注其涉及领域时辅助使用。
 
 ## 2. Label 体系
 

@@ -31,10 +31,11 @@ var ground_velocity := Vector2.ZERO  # px/秒
 var initial_speed := 0.0          # 本次投球初速度（用于衰减）
 var travelled := 0.0              # 已飞行地面距离
 var bounce_count := 0
-var has_damage := true            # 投球有伤害；传球无伤害（M3 使用）
-var catchable := false            # 低速球更易接住（M3 使用）
+var has_damage := true            # 投球有伤害；传球无伤害
+var catchable := false            # 低速球更易接住
 
 var holder: Node2D = null
+var thrower: Character = null     # 本次投球者（用于敌我区分与伤害 ATK，SP-M03.1）
 
 @onready var _collision: CollisionShape2D = $CollisionShape2D
 
@@ -88,6 +89,10 @@ func _process_flying(delta: float) -> void:
 	height += height_vel * delta
 	if height <= 0.0:
 		_on_ground_contact()
+
+	# 仅有伤害的投球才与敌方角色发生接球/击中判定（SP-M03.1）
+	if has_damage and state == State.FLYING:
+		_check_character_contact()
 
 
 func _on_ground_contact() -> void:
@@ -161,6 +166,8 @@ func hold_by(character: Node2D) -> void:
 
 ## 投球：方向单位向量 + 投球者攻击力。
 func throw(direction: Vector2, atk: int) -> void:
+	if holder is Character:
+		thrower = holder
 	holder = null
 	has_damage = true
 	bounce_count = 0
@@ -173,6 +180,7 @@ func throw(direction: Vector2, atk: int) -> void:
 
 ## 传球：飞向目标位置，低速、无伤害。
 func pass_to(target_pos: Vector2) -> void:
+	thrower = null
 	holder = null
 	has_damage = false
 	bounce_count = 0
@@ -193,6 +201,60 @@ func _set_state(next: int) -> void:
 	var prev := state
 	state = next
 	state_changed.emit(prev, next)
+
+
+# ---------------------------------------------------------------------------
+# M3：球-角色碰撞检测与接球/击中判定
+# ---------------------------------------------------------------------------
+
+## 检测飞行球与敌方角色的接触（SP-M03.1）。
+## 仅检测敌阵营、非无敌、且球高度在角色纵向范围内的目标。
+func _check_character_contact() -> void:
+	if thrower == null:
+		return
+	var ball_half := Vector2(Constants.HITBOX_BALL) * 0.5
+	for node in get_tree().get_nodes_in_group(&"characters"):
+		var c := node as Character
+		if c == null or c == thrower:
+			continue
+		if c.is_left_team == thrower.is_left_team:
+			continue  # 跳过队友
+		if c.is_invincible():
+			continue
+		# 高度判定：球飞越角色头顶则不命中
+		if height > c.hitbox_height() + 2.0:
+			continue
+		# 接球尝试中使用较大的接球判定框，否则用角色碰撞框
+		var box: Vector2 = Vector2(Constants.CATCHBOX) if c.is_catching() else c.current_hitbox()
+		var half: Vector2 = box * 0.5 + ball_half
+		var d := global_position - c.global_position
+		if absf(d.x) <= half.x and absf(d.y) <= half.y:
+			_resolve_contact(c)
+			return
+
+
+## 解算接触结果：接球成功 → 持球；否则 → 造成伤害（SP-M03.3 / SP-M03.4）。
+func _resolve_contact(c: Character) -> void:
+	var speed_pps := ground_velocity.length()
+	if c.is_catching() and c.can_catch(self):
+		c.catch_ball(self)
+		return
+	# 接球失败/未接：计算伤害并击退
+	var speed_pf := speed_pps / 60.0
+	var dmg := Constants.calc_damage(speed_pf, thrower.atk, c.def)
+	c.take_hit(dmg, ground_velocity.normalized(), speed_pps)
+	_drop_after_hit()
+
+
+## 击中后落地：轻微反弹并转为滚动，避免同一帧重复命中。
+func _drop_after_hit() -> void:
+	thrower = null
+	has_damage = false
+	height = 0.0
+	height_vel = 0.0
+	bounce_count = Constants.BALL_MAX_BOUNCES
+	ground_velocity = ground_velocity * -0.3
+	_set_state(State.ROLLING)
 
 
 func _draw() -> void:

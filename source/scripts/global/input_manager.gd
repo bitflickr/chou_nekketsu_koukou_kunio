@@ -28,7 +28,6 @@ const DIR_8 := [
 
 # 触屏来源状态（由虚拟摇杆 / 触屏按钮写入）
 var _touch_vector := Vector2.ZERO
-var _touch_actions := {}  # StringName -> bool
 
 var _keyboard_bindings := {
 	MOVE_LEFT: [KEY_A, KEY_LEFT],
@@ -88,8 +87,6 @@ func get_movement_vector_8() -> Vector2:
 # ---------------------------------------------------------------------------
 
 func is_pressed(action: StringName) -> bool:
-	if _touch_actions.get(action, false):
-		return true
 	return Input.is_action_pressed(action)
 
 
@@ -109,5 +106,14 @@ func set_touch_vector(v: Vector2) -> void:
 	_touch_vector = v
 
 
+## 触屏按钮写入动作状态。通过 Input.action_press/release 注入，
+## 使 is_just_pressed / is_just_released 对触屏来源同样生效（M3 接球/投球需要边沿）。
 func set_touch_action(action: StringName, pressed: bool) -> void:
-	_touch_actions[action] = pressed
+	if not InputMap.has_action(action):
+		return
+	if pressed:
+		if not Input.is_action_pressed(action):
+			Input.action_press(action)
+	else:
+		if Input.is_action_pressed(action):
+			Input.action_release(action)
