@@ -1,0 +1,21 @@
+# Godot 4
+.godot/
+*.import
+export_presets.cfg
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# IDE
+.windsurf/
+*.swp
+*.swo
+*~
+
+# Build
+android/build/
+*.apk
+*.aab
+*.ipa
