@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3 uid="uid://b0nekketsucourt0"]
+[gd_scene load_steps=3 format=3 uid="uid://b0nekketsucourt0"]
 
 [ext_resource type="Script" path="res://scripts/court/court.gd" id="1_court"]
+[ext_resource type="Script" path="res://scripts/court/court_lines.gd" id="2_lines"]
 
 [node name="Court" type="Node2D"]
 script = ExtResource("1_court")
@@ -11,6 +12,9 @@ script = ExtResource("1_court")
 offset_right = 256.0
 offset_bottom = 240.0
 color = Color(0.13, 0.16, 0.2, 1)
+
+[node name="CourtLines" type="Node2D" parent="BackgroundLayer"]
+script = ExtResource("2_lines")
 
 [node name="CharacterLayer" type="Node2D" parent="."]
 
