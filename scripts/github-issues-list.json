@@ -150,5 +150,15 @@
                        "P3:low"
                    ],
         "milestone":  ""
+    },
+    {
+        "body":  "Renderer uses gl_compatibility (OpenGL) for 2D pixel + mobile. But main dev machine is MacBook M1 Pro Max, and Apple deprecated OpenGL; Godot runs OpenGL via ANGLE (translated to Metal) on macOS, a compatibility layer not native path. Risk: rendering differences between mac editor/debug and Android/iOS devices (pixel alignment, texture filtering, color); future macOS/Godot upgrades may change ANGLE behavior. Mitigation: keep gl_compatibility (mobile compat + cross-platform consistency first); temporarily switch to Forward+ on mac only for debugging render bugs but export mobile with compatibility; verify key visuals (pixel-perfect, UI) on real Android/iOS devices, not just mac editor.",
+        "title":  "[RISK-17] macOS OpenGL compatibility layer vs mobile rendering consistency",
+        "labels":  [
+                       "type:risk",
+                       "area:mobile",
+                       "P2:medium"
+                   ],
+        "milestone":  "M0: Project Setup"
     }
 ]

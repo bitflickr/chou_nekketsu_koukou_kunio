@@ -25,5 +25,5 @@ assignees: ''
 
 ## 环境
 - **平台**：Android / iOS / PC Editor
-- **Godot 版本**：
+- **Godot 版本**：4.7
 - **设备型号**：

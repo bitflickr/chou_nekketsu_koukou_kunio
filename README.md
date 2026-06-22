@@ -2,7 +2,7 @@
 
 > **100% AI-Driven Development** — 本项目从设计、编码、美术到测试，全程由 AI 完成。人类负责审核和决策。
 
-使用 Godot 4 + GDScript 完整复刻 NES 版《熱血高校ドッジボール部》(1988, Technos Japan)，目标平台 Android / iOS。
+使用 Godot 4.7 + GDScript 完整复刻 NES 版《熱血高校ドッジボール部》(1988, Technos Japan)，目标平台 Android / iOS。
 
 ## 游戏简介
 
@@ -11,7 +11,7 @@
 | 项目 | 说明 |
 |------|------|
 | 原版 | 熱血高校ドッジボール部 (FC/NES, 1988) |
-| 引擎 | Godot 4 (GDScript) |
+| 引擎 | Godot 4.7 (GDScript) |
 | 平台 | Android / iOS |
 | 画风 | NES 像素风格 256×240 |
 | 视角 | 俯视 45° 伪 3D |
@@ -103,7 +103,7 @@ chou_nekketsu_koukou_kunio/
 
 ## 开发环境
 
-- **Godot** 4.x
+- **Godot** 4.7（全团队统一使用，必须以 4.7 版本开发）
 - **语言** GDScript
 - **AI 工具** Windsurf (Cascade)
 - **版本控制** Git + GitHub

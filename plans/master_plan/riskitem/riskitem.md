@@ -2,7 +2,7 @@
 
 > 关联计划：`plans/nekketsu-dodgeball-plan-cc0ab8.md`
 > 创建日期：2026-06-22
-> 最后更新：2026-06-22
+> 最后更新：2026-06-23
 
 ## 状态说明
 
@@ -240,19 +240,35 @@
 
 ---
 
+### RISK-17：macOS OpenGL 兼容层与移动端渲染一致性
+- **优先级**：🟡 P2
+- **状态**：🔲 待处理
+- **类别**：技术
+- **影响里程碑**：M0（项目搭建）、M10（移动端适配）
+- **描述**：项目渲染后端使用 `gl_compatibility`（OpenGL，见 `source/project.godot`），适合 2D 像素风与移动端兼容性。但主力开发机为 MacBook M1 Pro Max，而 Apple 已弃用 OpenGL，Godot 在 macOS 上通过 ANGLE 将 OpenGL 转译到 Metal 运行（属兼容层而非原生路径）。这可能带来：
+  - mac 编辑器/调试端与 Android/iOS 实机的渲染细节差异（像素对齐、纹理过滤、颜色等）
+  - 后续 macOS 版本或 Godot 升级后兼容层行为变化的潜在风险
+- **建议措施**：
+  1. 保持 `gl_compatibility` 不变（移动端兼容性与跨平台一致性优先）
+  2. 在 mac 上遇到疑似渲染 bug 时，临时切换 Forward+ 对比排查，但导出移动端仍用 compatibility
+  3. 关键画面（像素完美、UI）在真机（Android/iOS）上做一致性验收，不仅依赖 mac 编辑器
+- **解决记录**：
+
+---
+
 ## 统计总览
 
 | 优先级 | 数量 | 编号 |
 |--------|------|------|
 | 🔴 P0 | 5 | RISK-01 ~ RISK-05 |
 | 🟠 P1 | 3 | RISK-06 ~ RISK-08 |
-| 🟡 P2 | 5 | RISK-09 ~ RISK-13 |
+| 🟡 P2 | 6 | RISK-09 ~ RISK-13、RISK-17 |
 | 🟢 P3 | 3 | RISK-14 ~ RISK-16 |
-| **合计** | **16** | |
+| **合计** | **17** | |
 
 ## 建议处理顺序
 
 1. **开发前必须解决**（P0）：RISK-01 → RISK-03 → RISK-05 → RISK-04 → RISK-02
 2. **对应里程碑前解决**（P1）：RISK-07 → RISK-06 → RISK-08
-3. **尽早安排**（P2）：RISK-10 → RISK-09 → RISK-11 → RISK-13 → RISK-12
+3. **尽早安排**（P2）：RISK-10 → RISK-09 → RISK-11 → RISK-13 → RISK-12 → RISK-17
 4. **适时处理**（P3）：RISK-14 → RISK-15 → RISK-16

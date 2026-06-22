@@ -1,0 +1,35 @@
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
+config_version=5
+
+[application]
+
+config/name="熱血高校ドッジボール部 (AI Remake)"
+config/description="100% AI-driven Godot 4 remake of Nekketsu Koukou Dodgeball Bu (NES, 1988)."
+run/main_scene="res://scenes/court.tscn"
+config/features=PackedStringArray("4.7", "GL Compatibility")
+config/icon="res://icon.svg"
+
+[autoload]
+
+Constants="*res://scripts/global/constants.gd"
+
+[display]
+
+window/size/viewport_width=256
+window/size/viewport_height=240
+window/stretch/mode="viewport"
+window/stretch/aspect="keep"
+window/handheld/orientation=1
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/canvas_textures/default_texture_filter=0

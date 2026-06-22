@@ -44,7 +44,7 @@ Week 8:   M11
 
 | 文件 | 里程碑 | 故事点数 | 状态 |
 |------|--------|----------|------|
-| [SP-M00-project-setup.md](SP-M00-project-setup.md) | M0：项目搭建 | 6 | ⬜ 未开始 |
+| [SP-M00-project-setup.md](SP-M00-project-setup.md) | M0：项目搭建 | 6 | ✅ 已完成 |
 | [SP-M01-character-movement.md](SP-M01-character-movement.md) | M1：角色移动 | 7 | ⬜ 未开始 |
 | [SP-M02-ball-physics.md](SP-M02-ball-physics.md) | M2：球物理 | 7 | ⬜ 未开始 |
 | [SP-M03-catch-and-damage.md](SP-M03-catch-and-damage.md) | M3：接球与伤害 | 7 | ⬜ 未开始 |
@@ -64,10 +64,10 @@ Week 8:   M11
 | 指标 | 数值 |
 |------|------|
 | 总故事点数 | 88 |
-| ⬜ 未开始 | 88 |
+| ⬜ 未开始 | 82 |
 | 🔄 进行中 | 0 |
-| ✅ 已完成 | 0 |
-| 完成率 | 0% |
+| ✅ 已完成 | 6 |
+| 完成率 | 6.8% |
 
 ---
 
@@ -90,3 +90,4 @@ Week 8:   M11
 | 日期 | 变更内容 |
 |------|----------|
 | 2026-06-22 | 初始版本创建，拆分 88 个故事点 |
+| 2026-06-22 | M0（L0）完成，6 个故事点全部交付 |
