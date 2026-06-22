@@ -168,9 +168,17 @@ func _bounce_walls() -> bool:
 
 func _try_pickup() -> void:
 	for c in get_tree().get_nodes_in_group(&"characters"):
+		if c is Character and not _can_pickup(c):
+			continue
 		if c is Node2D and global_position.distance_to(c.global_position) <= PICKUP_RADIUS:
 			hold_by(c)
 			return
+
+
+## 仅可行动（非倒地/出局/受击）的角色可拾球。
+func _can_pickup(c: Character) -> bool:
+	return c.state != Character.State.DOWN and c.state != Character.State.OUT \
+			and c.state != Character.State.HIT
 
 
 # ---------------------------------------------------------------------------
@@ -266,6 +274,8 @@ func _check_character_contact() -> void:
 			continue  # 跳过队友
 		if c.is_invincible():
 			continue
+		if c.state == Character.State.DOWN or c.state == Character.State.OUT:
+			continue  # 倒地/出局者不再被命中
 		# 高度判定：球飞越角色头顶则不命中；不可蹲躲的球（跳投）忽略下蹲降低
 		if height > c.hit_height_ceiling(not duckable) + 2.0:
 			continue
@@ -287,7 +297,7 @@ func _resolve_contact(c: Character) -> void:
 	# 接球失败/未接：计算伤害并击退
 	var speed_pf := speed_pps / 60.0
 	var dmg := Constants.calc_damage(speed_pf, thrower.atk, c.def)
-	c.take_hit(dmg, ground_velocity.normalized(), speed_pps)
+	c.take_hit(dmg, ground_velocity.normalized(), speed_pps, thrower)
 	_drop_after_hit()
 
 

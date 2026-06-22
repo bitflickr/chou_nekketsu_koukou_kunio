@@ -1,5 +1,5 @@
 extends Node2D
-## 球场根场景脚本 + M1/M2 集成测试场景。
+## 球场根场景脚本 + M4 比赛流程集成场景。
 ##
 ## 层级结构：
 ##   - BackgroundLayer：球场背景与线条
@@ -7,12 +7,14 @@ extends Node2D
 ##   - BallLayer：球
 ##   - UILayer：HUD / 触屏控件（CanvasLayer，不随相机滚动）
 ##
-## M1/M2/M3 测试内容：生成 1 名玩家角色 + 2 名同队友 + 3 名敌队角色 + 1 个球，
-## 演示移动/跳跃/拾球/投球/传球，以及投球命中敌方扣 HP、接球与击退。
+## M4：部署双方完整队伍（各 3 内场 + 3 外场），交由 GameManager 驱动
+## 开球跳球 → 比赛循环 → 内外场切换 → 胜负判定。玩家操控左队一名内场球员。
+## 调试：按 T 切换敌方自动投球（便于验证玩家方受击与内外场转移）。
 
 const CHARACTER_SCENE := preload("res://scenes/character.tscn")
 const BALL_SCENE := preload("res://scenes/ball.tscn")
 const TOUCH_CONTROLS_SCENE := preload("res://scenes/touch_controls.tscn")
+const MATCH_HUD_SCRIPT := preload("res://scripts/ui/match_hud.gd")
 
 @onready var background_layer: Node2D = $BackgroundLayer
 @onready var character_layer: Node2D = $CharacterLayer
@@ -21,86 +23,107 @@ const TOUCH_CONTROLS_SCENE := preload("res://scenes/touch_controls.tscn")
 
 var _player: Character
 var _ball: Ball
+var _left_team: Array[Character] = []
+var _right_team: Array[Character] = []
 
-# --- 临时测试开关：敌人自动投球（便于单人验证接球，SP-M03.2/.3）。按 T 切换。---
-const AUTO_THROW_INTERVAL := 2.0  # 自动投球间隔（秒）
-var _enemies: Array[Character] = []
-var _auto_throw_on := true
-var _auto_throw_jump := false  # 自动投球用跳投（验证不可蹲躲）；false = 直线球
+# --- 调试：敌方自动投球（验证玩家方受击与内外场转移）。按 T 切换。---
+const AUTO_THROW_INTERVAL := 2.5
+var _auto_throw_on := false
 var _auto_throw_t := 0.0
 var _hint_label: Label
 
 
 func _ready() -> void:
 	print("[Court] ready — base resolution %s" % Constants.BASE_RESOLUTION)
-	_spawn_characters()
+	randomize()
+	_spawn_teams()
 	_spawn_ball()
-	_spawn_touch_controls()
+	_spawn_ui()
+	# 等待一帧确保所有角色 _ready 完成后再注册并开球
+	GameManager.setup_match(_left_team, _right_team, _ball)
+	GameManager.start_match.call_deferred()
 
 
-func _spawn_characters() -> void:
-	var infield := CourtGeometry.infield_rect(true)
-	# 玩家角色
-	_player = CHARACTER_SCENE.instantiate()
+# ---------------------------------------------------------------------------
+# 队伍部署（SP-M04.6）
+# ---------------------------------------------------------------------------
+
+func _spawn_teams() -> void:
+	_left_team = _spawn_team(true, Constants.Team.JAPAN, true)
+	_right_team = _spawn_team(false, Constants.Team.INDIA, false)
+	_player = _left_team[0]
 	_player.player_controlled = true
-	_player.is_left_team = true
-	_player.team = Constants.Team.JAPAN
-	_player.bounds_rects = [infield]
-	_player.global_position = infield.get_center()
-	character_layer.add_child(_player)
 
-	# 两名同队友（无 AI，便于演示传球）
-	for i in 2:
-		var mate: Character = CHARACTER_SCENE.instantiate()
-		mate.is_left_team = true
-		mate.team = Constants.Team.JAPAN
-		mate.bounds_rects = [infield]
-		mate.global_position = infield.get_center() + Vector2(0, -32 + i * 64)
-		character_layer.add_child(mate)
 
-	# 敌队三名（右半场，无 AI，供 M3 投球命中/接球测试）
-	var enemy_infield := CourtGeometry.infield_rect(false)
-	for i in 3:
-		var foe: Character = CHARACTER_SCENE.instantiate()
-		foe.is_left_team = false
-		foe.team = Constants.Team.INDIA
-		foe.bounds_rects = [enemy_infield]
-		foe.global_position = enemy_infield.get_center() + Vector2(0, -48 + i * 48)
-		character_layer.add_child(foe)
-		foe.facing = Vector2.LEFT  # 面朝中线，便于观察朝向
-		_enemies.append(foe)
+## 部署单支队伍：3 名内场 + 3 名外场。返回全部 6 名角色（前 3 为内场）。
+func _spawn_team(left: bool, team_id: int, _is_player_side: bool) -> Array[Character]:
+	var members: Array[Character] = []
+	var infield := CourtGeometry.infield_rect(left)
+	var face := Vector2.RIGHT if left else Vector2.LEFT
+	var center := infield.get_center()
+
+	# 内场 3 名（纵向排布）
+	for i in Constants.INFIELD_PLAYERS:
+		var c := _make_character(left, team_id, true)
+		c.bounds_rects = [infield]
+		c.global_position = center + Vector2(0, -40 + i * 40)
+		c.facing = face
+		character_layer.add_child(c)
+		members.append(c)
+
+	# 外场 3 名（分布于对方半场外围三侧通道）
+	var out_rects := CourtGeometry.outfield_rects(left)
+	for i in Constants.OUTFIELD_PLAYERS:
+		var c := _make_character(left, team_id, false)
+		c.bounds_rects = out_rects
+		c.global_position = out_rects[i % out_rects.size()].get_center()
+		c.facing = face
+		character_layer.add_child(c)
+		members.append(c)
+
+	return members
+
+
+func _make_character(left: bool, team_id: int, infield: bool) -> Character:
+	var c: Character = CHARACTER_SCENE.instantiate()
+	c.is_left_team = left
+	c.is_infield = infield
+	c.team = team_id
+	return c
 
 
 func _spawn_ball() -> void:
 	_ball = BALL_SCENE.instantiate()
-	_ball.global_position = _player.global_position + Vector2(16, 0)
+	_ball.global_position = Vector2(CourtGeometry.CENTER_X, CourtGeometry.INFIELD_TOP + Constants.INFIELD_HEIGHT * 0.5)
 	ball_layer.add_child(_ball)
 
 
-func _spawn_touch_controls() -> void:
+# ---------------------------------------------------------------------------
+# UI
+# ---------------------------------------------------------------------------
+
+func _spawn_ui() -> void:
 	ui_layer.add_child(TOUCH_CONTROLS_SCENE.instantiate())
+	var hud := Control.new()
+	hud.set_script(MATCH_HUD_SCRIPT)
+	ui_layer.add_child(hud)
 	_spawn_reset_button()
 	_spawn_hint_label()
 
 
-## 临时测试提示：显示自动投球状态。
 func _spawn_hint_label() -> void:
 	_hint_label = Label.new()
 	_hint_label.add_theme_font_size_override("font_size", 7)
-	_hint_label.position = Vector2(4, 4)
+	_hint_label.position = Vector2(4, 30)
 	ui_layer.add_child(_hint_label)
 	_update_hint()
 
 
 func _update_hint() -> void:
 	if _hint_label != null:
-		_hint_label.text = "AUTO-THROW: %s [%s] (T/Y)" % [
-			"ON" if _auto_throw_on else "OFF",
-			"JUMP" if _auto_throw_jump else "STRAIGHT",
-		]
+		_hint_label.text = "ENEMY AUTO-THROW: %s (T) | RESET (R)" % ["ON" if _auto_throw_on else "OFF"]
 
 
-## 仅测试用：右上角重置按钮（也可按 R 键），重新加载场景。
 func _spawn_reset_button() -> void:
 	var btn := Button.new()
 	btn.text = "RESET"
@@ -124,18 +147,20 @@ func _unhandled_input(event: InputEvent) -> void:
 			_auto_throw_on = not _auto_throw_on
 			_auto_throw_t = 0.0
 			_update_hint()
-		elif event.physical_keycode == KEY_Y:
-			_auto_throw_jump = not _auto_throw_jump
-			_update_hint()
 
+
+# ---------------------------------------------------------------------------
+# 玩家操作 + 调试敌方投球
+# ---------------------------------------------------------------------------
 
 func _process(delta: float) -> void:
+	if not GameManager.is_in_progress():
+		return
 	if not is_instance_valid(_player) or not is_instance_valid(_ball):
 		return
-	# 仅当球被玩家持有时响应投/传
+	# 玩家持球时响应投/传
 	if _ball.state == Ball.State.HELD and _ball.holder == _player:
 		if GameInput.is_just_pressed(GameInput.THROW):
-			# 空中投 → 跳投（不可蹲躲）；地面投 → 直线快球
 			var t := Ball.ThrowType.JUMP if _player.is_jumping() else Ball.ThrowType.STRAIGHT
 			_ball.throw(_player.facing, _player.atk, t, _player.height)
 		elif GameInput.is_just_pressed(GameInput.PASS):
@@ -147,9 +172,8 @@ func _process(delta: float) -> void:
 		_process_enemy_auto_throw(delta)
 
 
-## 临时测试：周期性让一名敌人拿球并投向玩家，便于单人验证接球。
+## 调试：周期性让一名右队球员拿球投向最近的左队内场球员。
 func _process_enemy_auto_throw(delta: float) -> void:
-	# 球已被左队（玩家方）持有时暂停，交给玩家操作
 	if _ball.state == Ball.State.HELD and _ball.holder is Character \
 			and (_ball.holder as Character).is_left_team:
 		return
@@ -157,24 +181,37 @@ func _process_enemy_auto_throw(delta: float) -> void:
 	if _auto_throw_t < AUTO_THROW_INTERVAL:
 		return
 	_auto_throw_t = 0.0
-	var shooter := _pick_active_enemy()
+	var shooter := _pick_active(_right_team)
 	if shooter == null:
+		return
+	var target := _nearest_infield_enemy(shooter)
+	if target == null:
 		return
 	_ball.global_position = shooter.global_position
 	_ball.hold_by(shooter)
-	var dir := (_player.global_position - shooter.global_position).normalized()
+	var dir := (target.global_position - shooter.global_position).normalized()
 	shooter.facing = dir
-	var t := Ball.ThrowType.JUMP if _auto_throw_jump else Ball.ThrowType.STRAIGHT
-	_ball.throw(dir, shooter.atk, t)
+	_ball.throw(dir, shooter.atk, Ball.ThrowType.STRAIGHT)
 
 
-## 选一名可投球的敌人（非倒地/出局）。
-func _pick_active_enemy() -> Character:
-	for e in _enemies:
-		if is_instance_valid(e) and e.state != Character.State.DOWN \
-				and e.state != Character.State.OUT:
-			return e
+func _pick_active(team: Array[Character]) -> Character:
+	for c in team:
+		if is_instance_valid(c) and c.state != Character.State.DOWN \
+				and c.state != Character.State.OUT and c.state != Character.State.HIT:
+			return c
 	return null
+
+
+func _nearest_infield_enemy(from: Character) -> Character:
+	var best: Character = null
+	var best_d := INF
+	for c in get_tree().get_nodes_in_group(&"characters"):
+		if c is Character and c.is_left_team != from.is_left_team and c.is_infield:
+			var d: float = from.global_position.distance_squared_to(c.global_position)
+			if d < best_d:
+				best_d = d
+				best = c
+	return best
 
 
 func _nearest_teammate(from: Character) -> Character:
@@ -182,7 +219,7 @@ func _nearest_teammate(from: Character) -> Character:
 	var best_d := INF
 	for c in get_tree().get_nodes_in_group(&"characters"):
 		if c is Character and from.is_teammate(c):
-			var d := from.global_position.distance_squared_to(c.global_position)
+			var d: float = from.global_position.distance_squared_to(c.global_position)
 			if d < best_d:
 				best_d = d
 				best = c

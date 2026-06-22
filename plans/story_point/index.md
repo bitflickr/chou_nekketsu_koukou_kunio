@@ -48,7 +48,7 @@ Week 8:   M11
 | [SP-M01-character-movement.md](SP-M01-character-movement.md) | M1：角色移动 | 7 | ✅ 已完成 |
 | [SP-M02-ball-physics.md](SP-M02-ball-physics.md) | M2：球物理 | 7 | ✅ 已完成 |
 | [SP-M03-catch-and-damage.md](SP-M03-catch-and-damage.md) | M3：接球与伤害 | 7 | ✅ 已完成 |
-| [SP-M04-match-flow.md](SP-M04-match-flow.md) | M4：比赛流程 | 7 | ⬜ 未开始 |
+| [SP-M04-match-flow.md](SP-M04-match-flow.md) | M4：比赛流程 | 7 | ✅ 已完成 |
 | [SP-M05-ai-system.md](SP-M05-ai-system.md) | M5：AI 系统 | 8 | ⬜ 未开始 |
 | [SP-M06-special-throws.md](SP-M06-special-throws.md) | M6：必杀技 | 10 | ⬜ 未开始 |
 | [SP-M07-teams-and-modes.md](SP-M07-teams-and-modes.md) | M7：队伍与模式 | 6 | ⬜ 未开始 |
@@ -64,10 +64,10 @@ Week 8:   M11
 | 指标 | 数值 |
 |------|------|
 | 总故事点数 | 88 |
-| ⬜ 未开始 | 61 |
+| ⬜ 未开始 | 54 |
 | 🔄 进行中 | 0 |
-| ✅ 已完成 | 27 |
-| 完成率 | 30.7% |
+| ✅ 已完成 | 34 |
+| 完成率 | 38.6% |
 
 ---
 
@@ -79,7 +79,7 @@ Week 8:   M11
 |----------|------|-------------|
 | RISK-01 | 原版数据获取来源不明确 | M1 之前 |
 | RISK-02 | 美术资产来源与生产流程未定义 | M8 之前 |
-| RISK-03 | 比赛规则细节缺失 | M4 之前 |
+| ~~RISK-03~~ | ~~比赛规则细节缺失~~ ✅ 已解决（GDD §8.6） | M4 之前 |
 | RISK-04 | 缺少存档/进度保存系统 | M7 之前 |
 | RISK-05 | 缺少统一输入管理层 | M1 之前 |
 
@@ -93,3 +93,4 @@ Week 8:   M11
 | 2026-06-22 | M0（L0）完成，6 个故事点全部交付 |
 | 2026-06-23 | L1（M1+M2）完成，14 个故事点交付，accumulated 20/88 |
 | 2026-06-23 | L2（M3）完成，7 个故事点交付（接球与伤害），accumulated 27/88 |
+| 2026-06-23 | L3 启动：RISK-03 已解决；M4（比赛流程）完成，7 个故事点交付，accumulated 34/88 |
