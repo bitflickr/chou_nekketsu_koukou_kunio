@@ -1,0 +1,31 @@
+# Auto detect text files and ensure LF line endings
+* text=auto eol=lf
+
+# Godot files
+*.gd text eol=lf
+*.tscn text eol=lf
+*.tres text eol=lf
+*.godot text eol=lf
+*.cfg text eol=lf
+*.import text eol=lf
+
+# Documentation
+*.md text eol=lf
+
+# Scripts
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+*.sh text eol=lf
+
+# Binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.wav binary
+*.ogg binary
+*.mp3 binary
+*.ttf binary
+*.otf binary
+*.woff binary
+*.woff2 binary
