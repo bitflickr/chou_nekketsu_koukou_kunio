@@ -13,9 +13,18 @@ signal picked_up(by: Node2D)
 
 enum State { HELD, FLYING, ROLLING, IDLE }
 
+## 投球类型（轨迹模型，依据原版 Super Dodge Ball）：
+##   STRAIGHT 普通地面投球 = 贴身高度直线快球，可被下蹲躲过；
+##   JUMP     跳跃投球 = 从高处斜向下坠，不可下蹲躲过；
+##   LOB      传球 / 高抛 = 真抛物线（上抛后落下）。
+enum ThrowType { STRAIGHT, JUMP, LOB }
+
 # 物理常量（px、px/秒）。由 original_game_data.md 的每帧数值换算而来。
 const GRAVITY_PPS2 := 640.0       # 高度方向重力
-const THROW_VZ := 120.0           # 投球起跳垂直初速度（形成抛物线）
+const THROW_VZ := 120.0           # 高抛/吊球垂直初速度（形成大抛物线）
+const STRAIGHT_HEIGHT := 10.0     # 直线球飞行高度（身体中部，高于下蹲）
+const JUMP_RELEASE_HEIGHT := 12.0 # 跳跃投球最低起始高度
+const JUMP_THROW_VZ := 40.0       # 跳跃投球轻微上抛后下坠的初速度
 const PASS_SPEED_PPS := 90.0      # 传球地面速度（较慢、无伤害）
 const PASS_VZ := 40.0             # 传球轻微抛物
 const MAX_RANGE := 256.0          # 用于球速距离衰减的最大射程
@@ -33,6 +42,9 @@ var travelled := 0.0              # 已飞行地面距离
 var bounce_count := 0
 var has_damage := true            # 投球有伤害；传球无伤害
 var catchable := false            # 低速球更易接住
+var throw_type: int = ThrowType.STRAIGHT
+var apply_gravity := true         # 飞行中是否受重力（直线球撞墙前为 false）
+var duckable := true              # 是否可被下蹲躲过（跳投为 false）
 
 var holder: Node2D = null
 var thrower: Character = null     # 本次投球者（用于敌我区分与伤害 ATK，SP-M03.1）
@@ -82,13 +94,18 @@ func _process_flying(delta: float) -> void:
 	var step := ground_velocity * delta
 	global_position += step
 	travelled += step.length()
-	_bounce_walls()
+	var bounced := _bounce_walls()
 
-	# 高度抛物线
-	height_vel -= GRAVITY_PPS2 * delta
-	height += height_vel * delta
-	if height <= 0.0:
-		_on_ground_contact()
+	if apply_gravity:
+		# 高度抛物线（JUMP / LOB，或直线球撞墙后开始下落）
+		height_vel -= GRAVITY_PPS2 * delta
+		height += height_vel * delta
+		if height <= 0.0:
+			_on_ground_contact()
+	elif bounced:
+		# 直线球撞到边界 → 开始下落，随后反弹/滚动
+		apply_gravity = true
+		height_vel = 0.0
 
 	# 仅有伤害的投球才与敌方角色发生接球/击中判定（SP-M03.1）
 	if has_damage and state == State.FLYING:
@@ -123,24 +140,30 @@ func _process_rolling(delta: float) -> void:
 	_try_pickup()
 
 
-## 球碰到球场边界时反弹（带衰减），避免飞出界外消失。
-func _bounce_walls() -> void:
+## 球碰到球场边界时反弹（带衰减），避免飞出界外消失。返回是否发生反弹。
+func _bounce_walls() -> bool:
 	var r := CourtGeometry.COURT_RECT
 	var p := global_position
 	var damp := Constants.BALL_BOUNCE_DAMPING
+	var bounced := false
 	if p.x < r.position.x:
 		p.x = r.position.x
 		ground_velocity.x = absf(ground_velocity.x) * damp
+		bounced = true
 	elif p.x > r.end.x:
 		p.x = r.end.x
 		ground_velocity.x = -absf(ground_velocity.x) * damp
+		bounced = true
 	if p.y < r.position.y:
 		p.y = r.position.y
 		ground_velocity.y = absf(ground_velocity.y) * damp
+		bounced = true
 	elif p.y > r.end.y:
 		p.y = r.end.y
 		ground_velocity.y = -absf(ground_velocity.y) * damp
+		bounced = true
 	global_position = p
+	return bounced
 
 
 func _try_pickup() -> void:
@@ -164,17 +187,36 @@ func hold_by(character: Node2D) -> void:
 	picked_up.emit(character)
 
 
-## 投球：方向单位向量 + 投球者攻击力。
-func throw(direction: Vector2, atk: int) -> void:
+## 投球：方向单位向量 + 投球者攻击力 + 投球类型（轨迹）+ 释放高度（跳投用）。
+func throw(direction: Vector2, atk: int, type: int = ThrowType.STRAIGHT, \
+		release_height: float = -1.0) -> void:
 	if holder is Character:
 		thrower = holder
 	holder = null
 	has_damage = true
 	bounce_count = 0
 	travelled = 0.0
+	throw_type = type
 	initial_speed = Constants.ball_initial_speed(atk) * 60.0  # px/帧 → px/秒
 	ground_velocity = direction.normalized() * initial_speed
-	height_vel = THROW_VZ
+	match type:
+		ThrowType.JUMP:
+			# 从高处斜向下坠，不可下蹲躲过
+			apply_gravity = true
+			duckable = false
+			height = maxf(release_height, JUMP_RELEASE_HEIGHT)
+			height_vel = JUMP_THROW_VZ
+		ThrowType.LOB:
+			apply_gravity = true
+			duckable = true
+			height = STRAIGHT_HEIGHT
+			height_vel = THROW_VZ
+		_:
+			# STRAIGHT：固定身体高度、不受重力的直线快球，可被下蹲躲过
+			apply_gravity = false
+			duckable = true
+			height = STRAIGHT_HEIGHT
+			height_vel = 0.0
 	_set_state(State.FLYING)
 
 
@@ -185,6 +227,9 @@ func pass_to(target_pos: Vector2) -> void:
 	has_damage = false
 	bounce_count = 0
 	travelled = 0.0
+	throw_type = ThrowType.LOB
+	apply_gravity = true
+	duckable = true
 	initial_speed = PASS_SPEED_PPS
 	ground_velocity = (target_pos - global_position).normalized() * PASS_SPEED_PPS
 	height_vel = PASS_VZ
@@ -221,8 +266,8 @@ func _check_character_contact() -> void:
 			continue  # 跳过队友
 		if c.is_invincible():
 			continue
-		# 高度判定：球飞越角色头顶则不命中
-		if height > c.hitbox_height() + 2.0:
+		# 高度判定：球飞越角色头顶则不命中；不可蹲躲的球（跳投）忽略下蹲降低
+		if height > c.hit_height_ceiling(not duckable) + 2.0:
 			continue
 		# 接球尝试中使用较大的接球判定框，否则用角色碰撞框
 		var box: Vector2 = Vector2(Constants.CATCHBOX) if c.is_catching() else c.current_hitbox()

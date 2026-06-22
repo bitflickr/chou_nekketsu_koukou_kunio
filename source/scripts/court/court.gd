@@ -22,6 +22,14 @@ const TOUCH_CONTROLS_SCENE := preload("res://scenes/touch_controls.tscn")
 var _player: Character
 var _ball: Ball
 
+# --- 临时测试开关：敌人自动投球（便于单人验证接球，SP-M03.2/.3）。按 T 切换。---
+const AUTO_THROW_INTERVAL := 2.0  # 自动投球间隔（秒）
+var _enemies: Array[Character] = []
+var _auto_throw_on := true
+var _auto_throw_jump := false  # 自动投球用跳投（验证不可蹲躲）；false = 直线球
+var _auto_throw_t := 0.0
+var _hint_label: Label
+
 
 func _ready() -> void:
 	print("[Court] ready — base resolution %s" % Constants.BASE_RESOLUTION)
@@ -60,6 +68,7 @@ func _spawn_characters() -> void:
 		foe.global_position = enemy_infield.get_center() + Vector2(0, -48 + i * 48)
 		character_layer.add_child(foe)
 		foe.facing = Vector2.LEFT  # 面朝中线，便于观察朝向
+		_enemies.append(foe)
 
 
 func _spawn_ball() -> void:
@@ -71,6 +80,24 @@ func _spawn_ball() -> void:
 func _spawn_touch_controls() -> void:
 	ui_layer.add_child(TOUCH_CONTROLS_SCENE.instantiate())
 	_spawn_reset_button()
+	_spawn_hint_label()
+
+
+## 临时测试提示：显示自动投球状态。
+func _spawn_hint_label() -> void:
+	_hint_label = Label.new()
+	_hint_label.add_theme_font_size_override("font_size", 7)
+	_hint_label.position = Vector2(4, 4)
+	ui_layer.add_child(_hint_label)
+	_update_hint()
+
+
+func _update_hint() -> void:
+	if _hint_label != null:
+		_hint_label.text = "AUTO-THROW: %s [%s] (T/Y)" % [
+			"ON" if _auto_throw_on else "OFF",
+			"JUMP" if _auto_throw_jump else "STRAIGHT",
+		]
 
 
 ## 仅测试用：右上角重置按钮（也可按 R 键），重新加载场景。
@@ -90,22 +117,64 @@ func _reset() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event is InputEventKey and event.pressed and not event.echo \
-			and event.physical_keycode == KEY_R:
-		_reset()
+	if event is InputEventKey and event.pressed and not event.echo:
+		if event.physical_keycode == KEY_R:
+			_reset()
+		elif event.physical_keycode == KEY_T:
+			_auto_throw_on = not _auto_throw_on
+			_auto_throw_t = 0.0
+			_update_hint()
+		elif event.physical_keycode == KEY_Y:
+			_auto_throw_jump = not _auto_throw_jump
+			_update_hint()
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	if not is_instance_valid(_player) or not is_instance_valid(_ball):
 		return
 	# 仅当球被玩家持有时响应投/传
 	if _ball.state == Ball.State.HELD and _ball.holder == _player:
 		if GameInput.is_just_pressed(GameInput.THROW):
-			_ball.throw(_player.facing, _player.atk)
+			# 空中投 → 跳投（不可蹲躲）；地面投 → 直线快球
+			var t := Ball.ThrowType.JUMP if _player.is_jumping() else Ball.ThrowType.STRAIGHT
+			_ball.throw(_player.facing, _player.atk, t, _player.height)
 		elif GameInput.is_just_pressed(GameInput.PASS):
 			var mate := _nearest_teammate(_player)
 			if mate != null:
 				_ball.pass_to(mate.global_position)
+
+	if _auto_throw_on:
+		_process_enemy_auto_throw(delta)
+
+
+## 临时测试：周期性让一名敌人拿球并投向玩家，便于单人验证接球。
+func _process_enemy_auto_throw(delta: float) -> void:
+	# 球已被左队（玩家方）持有时暂停，交给玩家操作
+	if _ball.state == Ball.State.HELD and _ball.holder is Character \
+			and (_ball.holder as Character).is_left_team:
+		return
+	_auto_throw_t += delta
+	if _auto_throw_t < AUTO_THROW_INTERVAL:
+		return
+	_auto_throw_t = 0.0
+	var shooter := _pick_active_enemy()
+	if shooter == null:
+		return
+	_ball.global_position = shooter.global_position
+	_ball.hold_by(shooter)
+	var dir := (_player.global_position - shooter.global_position).normalized()
+	shooter.facing = dir
+	var t := Ball.ThrowType.JUMP if _auto_throw_jump else Ball.ThrowType.STRAIGHT
+	_ball.throw(dir, shooter.atk, t)
+
+
+## 选一名可投球的敌人（非倒地/出局）。
+func _pick_active_enemy() -> Character:
+	for e in _enemies:
+		if is_instance_valid(e) and e.state != Character.State.DOWN \
+				and e.state != Character.State.OUT:
+			return e
+	return null
 
 
 func _nearest_teammate(from: Character) -> Character:

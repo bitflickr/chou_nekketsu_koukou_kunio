@@ -19,6 +19,7 @@ const MOVE_DOWN := &"kn_move_down"
 const JUMP := &"kn_jump"      # B 按钮：跳跃 / 闪避
 const THROW := &"kn_throw"    # A 按钮：投球 / 接球
 const PASS := &"kn_pass"      # 传球
+const CROUCH := &"kn_crouch"  # C 按钮：下蹲 / 闪避（按住生效）
 
 # 8 方向单位向量表
 const DIR_8 := [
@@ -37,6 +38,7 @@ var _keyboard_bindings := {
 	JUMP: [KEY_SPACE, KEY_K],
 	THROW: [KEY_J, KEY_ENTER],
 	PASS: [KEY_L],
+	CROUCH: [KEY_SHIFT, KEY_C],
 }
 
 

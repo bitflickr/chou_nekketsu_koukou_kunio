@@ -10,11 +10,13 @@ extends Control
 const JOY_RADIUS := 48.0
 const BTN_RADIUS := 20.0
 
-# A = 投球/传球/接球；B = 跳跃/闪避（SP-M03.7）
+# A = 投球/传球/接球；B = 跳跃；C = 下蹲/闪避（按住）
 const COLOR_A := Color(0.9, 0.3, 0.3, 0.35)
 const COLOR_A_DOWN := Color(1.0, 0.5, 0.5, 0.7)
 const COLOR_B := Color(0.3, 0.5, 0.9, 0.35)
 const COLOR_B_DOWN := Color(0.5, 0.7, 1.0, 0.7)
+const COLOR_C := Color(0.3, 0.8, 0.4, 0.35)
+const COLOR_C_DOWN := Color(0.5, 1.0, 0.6, 0.7)
 
 var _joy_index := -1          # 控制摇杆的触点 index（-1 = 无）
 var _joy_base := Vector2.ZERO
@@ -24,6 +26,7 @@ var _button_touches := {}
 
 @onready var _btn_a_pos := Vector2.ZERO  # 投球（右下）
 @onready var _btn_b_pos := Vector2.ZERO  # 跳跃（右上）
+@onready var _btn_c_pos := Vector2.ZERO  # 下蹲（左于 A）
 
 
 func _ready() -> void:
@@ -36,6 +39,7 @@ func _layout_buttons() -> void:
 	var s := get_viewport_rect().size
 	_btn_a_pos = Vector2(s.x - 28, s.y - 28)
 	_btn_b_pos = Vector2(s.x - 66, s.y - 46)
+	_btn_c_pos = Vector2(s.x - 100, s.y - 28)
 	queue_redraw()
 
 
@@ -71,6 +75,10 @@ func _on_press(index: int, pos: Vector2) -> void:
 	if pos.distance_to(_btn_b_pos) <= BTN_RADIUS:
 		_button_touches[index] = GameInput.JUMP
 		GameInput.set_touch_action(GameInput.JUMP, true)
+		return
+	if pos.distance_to(_btn_c_pos) <= BTN_RADIUS:
+		_button_touches[index] = GameInput.CROUCH
+		GameInput.set_touch_action(GameInput.CROUCH, true)
 		return
 	# 左半屏 → 摇杆
 	if _joy_index == -1 and pos.x < get_viewport_rect().size.x * 0.5:
@@ -109,8 +117,10 @@ func _draw() -> void:
 	# 动作按钮（带标签与按压反馈，SP-M03.7）
 	var a_down := _is_action_down(GameInput.THROW)
 	var b_down := _is_action_down(GameInput.JUMP)
+	var c_down := _is_action_down(GameInput.CROUCH)
 	_draw_button(_btn_b_pos, "B", COLOR_B_DOWN if b_down else COLOR_B)
 	_draw_button(_btn_a_pos, "A", COLOR_A_DOWN if a_down else COLOR_A)
+	_draw_button(_btn_c_pos, "C", COLOR_C_DOWN if c_down else COLOR_C)
 	# 摇杆
 	if _joy_index != -1:
 		draw_circle(_joy_base, JOY_RADIUS, Color(1, 1, 1, 0.12))

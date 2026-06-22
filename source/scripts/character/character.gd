@@ -12,17 +12,18 @@ signal state_changed(from: int, to: int)
 signal was_hit(damage: float)        # 被球击中（接球失败）
 signal eliminated                    # HP 归零倒地（M4 接管淘汰出场）
 
-## 角色状态。M1 仅激活前三个，其余为后续里程碑预留。
-enum State { IDLE, MOVE, JUMP, HOLD, THROW, CATCH, HIT, DOWN, OUT }
+## 角色状态。CROUCH 追加在末尾以保持既有枚举值不变。
+enum State { IDLE, MOVE, JUMP, HOLD, THROW, CATCH, HIT, DOWN, OUT, CROUCH }
 
-## 允许的状态转换表（M3 扩展版）。
+## 允许的状态转换表（M3 扩展版，含下蹲）。
 const TRANSITIONS := {
-	State.IDLE: [State.MOVE, State.JUMP, State.HOLD, State.CATCH, State.HIT, State.DOWN, State.OUT],
-	State.MOVE: [State.IDLE, State.JUMP, State.HOLD, State.CATCH, State.HIT, State.DOWN, State.OUT],
+	State.IDLE: [State.MOVE, State.JUMP, State.HOLD, State.CATCH, State.CROUCH, State.HIT, State.DOWN, State.OUT],
+	State.MOVE: [State.IDLE, State.JUMP, State.HOLD, State.CATCH, State.CROUCH, State.HIT, State.DOWN, State.OUT],
 	State.JUMP: [State.IDLE, State.MOVE, State.CATCH, State.HOLD, State.HIT, State.DOWN, State.OUT],
 	State.HOLD: [State.IDLE, State.MOVE, State.JUMP, State.THROW, State.HIT, State.DOWN, State.OUT],
 	State.THROW: [State.IDLE, State.MOVE, State.HIT, State.DOWN, State.OUT],
 	State.CATCH: [State.IDLE, State.MOVE, State.HOLD, State.HIT, State.DOWN, State.OUT],
+	State.CROUCH: [State.IDLE, State.MOVE, State.HIT, State.DOWN, State.OUT],
 	State.HIT: [State.IDLE, State.MOVE, State.DOWN, State.OUT],
 	State.DOWN: [State.IDLE, State.OUT],
 	State.OUT: [State.IDLE],
@@ -35,6 +36,7 @@ const HIT_KNOCKBACK_FRAMES := 18     # 击退滑动持续帧
 const KNOCKBACK_DECAY := 0.82        # 每帧击退速度衰减
 const KNOCKBACK_SPEED_FACTOR := 11.0 # 击退距离(px) → 初始击退速度(px/秒) 的换算系数
 const GETUP_INVINCIBLE := 20         # 倒地起身后的短暂无敌帧
+const CROUCH_HIT_HEIGHT := 7.0       # 下蹲时可被命中的高度上限（低于直线球高度）
 
 @export var player_controlled := false
 @export var is_left_team := true
@@ -100,10 +102,20 @@ func _physics_process(delta: float) -> void:
 	var move_dir := Vector2.ZERO
 	var jump_pressed := false
 	var catch_pressed := false
+	var crouch_held := false
 	if player_controlled:
 		move_dir = GameInput.get_movement_vector_8()
 		jump_pressed = GameInput.is_just_pressed(GameInput.JUMP)
 		catch_pressed = GameInput.is_just_pressed(GameInput.THROW)
+		crouch_held = GameInput.is_pressed(GameInput.CROUCH)
+
+	# 下蹲（しゃがむ）：仅地面、未持球时；期间不可移动/跳跃/接球，可躲直线球
+	if _update_crouch(crouch_held):
+		velocity = Vector2.ZERO
+		move_and_slide()
+		_apply_region_constraint()
+		queue_redraw()
+		return
 
 	_update_jump(delta, jump_pressed)
 	_update_catch(catch_pressed)
@@ -140,6 +152,18 @@ func _update_catch(catch_pressed: bool) -> void:
 	if state in [State.IDLE, State.MOVE]:
 		catch_timer = Constants.CATCH_WINDOW_NORMAL
 		_set_state(State.CATCH)
+
+
+## 下蹲处理。返回 true 表示本帧处于下蹲（调用方应跳过移动/跳跃）。
+func _update_crouch(crouch_held: bool) -> bool:
+	if crouch_held and state != State.JUMP and not _is_holding_ball():
+		if state == State.IDLE or state == State.MOVE:
+			_set_state(State.CROUCH)
+		return state == State.CROUCH
+	if state == State.CROUCH:
+		state = State.IDLE  # 直接复位以允许立即转移
+		_set_state(State.IDLE)
+	return false
 
 
 ## 本角色当前是否持有球。
@@ -227,14 +251,22 @@ func is_catching() -> bool:
 	return catch_timer > 0
 
 
+func is_crouching() -> bool:
+	return state == State.CROUCH
+
+
 ## 当前地面碰撞框尺寸（跳跃时缩小，SP-M03.1）。
 func current_hitbox() -> Vector2:
 	return Vector2(Constants.HITBOX_JUMP) if is_jumping() else Vector2(Constants.HITBOX_STAND)
 
 
-## 球可命中的垂直高度上限（跳跃时更低，超过则球从头顶飞过）。
-func hitbox_height() -> float:
-	return 8.0 if is_jumping() else 16.0
+## 球可命中的垂直高度上限。跳跃时更低；下蹲可降低（除非来球不可蹲躲，如跳投）。
+func hit_height_ceiling(ignore_crouch := false) -> float:
+	if is_jumping():
+		return 8.0
+	if state == State.CROUCH and not ignore_crouch:
+		return CROUCH_HIT_HEIGHT
+	return 16.0
 
 
 ## 判定本次接球是否成功（SP-M03.3）：
@@ -346,6 +378,18 @@ func _draw() -> void:
 		var flat := Rect2(-SPRITE_SIZE.x * 0.5, SPRITE_SIZE.y * 0.5 - 6.0, SPRITE_SIZE.x, 6.0)
 		draw_rect(flat, color.darkened(0.3))
 		draw_rect(flat, Color(0, 0, 0, 0.6), false, 1.0)
+		_draw_hp_bar()
+		return
+
+	# 下蹲：压低的身体（只覆盖下半身，表现可躲直线球）
+	if state == State.CROUCH:
+		var ch := SPRITE_SIZE.y * 0.55
+		var crect := Rect2(-SPRITE_SIZE.x * 0.5, SPRITE_SIZE.y * 0.5 - ch, SPRITE_SIZE.x, ch)
+		draw_circle(Vector2(0, SPRITE_SIZE.y * 0.5), 6.0, Color(0, 0, 0, 0.35))
+		draw_rect(crect, color)
+		draw_rect(crect, Color(0, 0, 0, 0.6), false, 1.0)
+		var c := crect.get_center()
+		draw_line(c, c + facing * 6.0, Color(0, 0, 0, 0.8), 1.5)
 		_draw_hp_bar()
 		return
 
