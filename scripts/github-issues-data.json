@@ -1,0 +1,144 @@
+﻿{
+    "labels":  [
+                   {
+                       "color":  "d73a4a",
+                       "description":  "Bug",
+                       "name":  "type:bug"
+                   },
+                   {
+                       "color":  "e67e22",
+                       "description":  "Risk item",
+                       "name":  "type:risk"
+                   },
+                   {
+                       "color":  "0e8a16",
+                       "description":  "New feature",
+                       "name":  "type:feature"
+                   },
+                   {
+                       "color":  "0075ca",
+                       "description":  "Design decision",
+                       "name":  "type:design"
+                   },
+                   {
+                       "color":  "7b2d8b",
+                       "description":  "Art/Audio asset",
+                       "name":  "type:asset"
+                   },
+                   {
+                       "color":  "bfdadc",
+                       "description":  "Engineering/CI",
+                       "name":  "type:infra"
+                   },
+                   {
+                       "color":  "c5def5",
+                       "description":  "Character system",
+                       "name":  "area:character"
+                   },
+                   {
+                       "color":  "c5def5",
+                       "description":  "Ball physics",
+                       "name":  "area:ball"
+                   },
+                   {
+                       "color":  "c5def5",
+                       "description":  "Match flow",
+                       "name":  "area:match"
+                   },
+                   {
+                       "color":  "c5def5",
+                       "description":  "AI system",
+                       "name":  "area:ai"
+                   },
+                   {
+                       "color":  "c5def5",
+                       "description":  "UI/HUD",
+                       "name":  "area:ui"
+                   },
+                   {
+                       "color":  "c5def5",
+                       "description":  "Input control",
+                       "name":  "area:input"
+                   },
+                   {
+                       "color":  "c5def5",
+                       "description":  "Audio",
+                       "name":  "area:audio"
+                   },
+                   {
+                       "color":  "c5def5",
+                       "description":  "Mobile",
+                       "name":  "area:mobile"
+                   },
+                   {
+                       "color":  "b60205",
+                       "description":  "Blocker",
+                       "name":  "P0:blocker"
+                   },
+                   {
+                       "color":  "d93f0b",
+                       "description":  "High priority",
+                       "name":  "P1:high"
+                   },
+                   {
+                       "color":  "fbca04",
+                       "description":  "Medium priority",
+                       "name":  "P2:medium"
+                   },
+                   {
+                       "color":  "0e8a16",
+                       "description":  "Low priority",
+                       "name":  "P3:low"
+                   }
+               ],
+    "milestones":  [
+                       {
+                           "description":  "Godot project init, directory structure (1d)",
+                           "title":  "M0: Project Setup"
+                       },
+                       {
+                           "description":  "8-dir movement, jump, touch joystick (3d)",
+                           "title":  "M1: Character Move"
+                       },
+                       {
+                           "description":  "Throw, parabola, pass, bounce (3d)",
+                           "title":  "M2: Ball Physics"
+                       },
+                       {
+                           "description":  "Collision, HP system, hit anim (3d)",
+                           "title":  "M3: Catch and Damage"
+                       },
+                       {
+                           "description":  "Serve, in/out field switch, KO, win (3d)",
+                           "title":  "M4: Match Flow"
+                       },
+                       {
+                           "description":  "Move, throw, catch AI, difficulty (5d)",
+                           "title":  "M5: AI System"
+                       },
+                       {
+                           "description":  "All character special throw trajectories (5d)",
+                           "title":  "M6: Special Throws"
+                       },
+                       {
+                           "description":  "8 teams, World Cup/VS/Bean Ball (5d)",
+                           "title":  "M7: Teams and Modes"
+                       },
+                       {
+                           "description":  "Menu, HUD, pixel sprites, animation (7d)",
+                           "title":  "M8: UI and Art"
+                       },
+                       {
+                           "description":  "BGM, throw/hit/cheer SFX (3d)",
+                           "title":  "M9: Audio"
+                       },
+                       {
+                           "description":  "Touch optimize, Android/iOS export (5d)",
+                           "title":  "M10: Mobile Adapt"
+                       },
+                       {
+                           "description":  "Bug fix, balance, perf optimize (5d)",
+                           "title":  "M11: Polish Release"
+                       }
+                   ]
+}

@@ -1,0 +1,154 @@
+﻿[
+    {
+        "body":  "original_game_data.md requires original ROM data (character stats, hitbox sizes, catch window frames), but data source is not specified. ROM disassembly? Community wiki? Manual measurement?",
+        "title":  "[RISK-01] Data source for original game data undefined",
+        "labels":  [
+                       "type:risk",
+                       "P0:blocker"
+                   ],
+        "milestone":  ""
+    },
+    {
+        "body":  "assets/ directory only lists structure, no production pipeline defined. Hand-drawn pixels or extract from original? 8 teams x 6 chars x many anim frames = massive workload.",
+        "title":  "[RISK-02] Art asset pipeline undefined",
+        "labels":  [
+                       "type:risk",
+                       "type:asset",
+                       "P0:blocker"
+                   ],
+        "milestone":  "M8: UI and Art"
+    },
+    {
+        "body":  "Core rules undefined in GDD: serve mechanism, ball ownership after ground hit, outfield player range, outfield kill revive rule, time limit and draw handling.",
+        "title":  "[RISK-03] Match rules details missing",
+        "labels":  [
+                       "type:risk",
+                       "type:design",
+                       "P0:blocker"
+                   ],
+        "milestone":  "M4: Match Flow"
+    },
+    {
+        "body":  "World Cup mode is multi-stage. Mobile users can be interrupted anytime. No auto-save design exists in project structure.",
+        "title":  "[RISK-04] No save/load system",
+        "labels":  [
+                       "type:risk",
+                       "area:match",
+                       "P0:blocker"
+                   ],
+        "milestone":  "M7: Teams and Modes"
+    },
+    {
+        "body":  "touch_controls.gd only handles touch. Dev needs keyboard/gamepad, VS mode needs local 2P input. No unified input manager to abstract input sources.",
+        "title":  "[RISK-05] No unified input management layer",
+        "labels":  [
+                       "type:risk",
+                       "area:input",
+                       "P0:blocker"
+                   ],
+        "milestone":  "M1: Character Move"
+    },
+    {
+        "body":  "48 characters (8x6), each with unique special throw trajectory. special_throws.gd single file may not scale. 5 days estimate too tight.",
+        "title":  "[RISK-06] Special throw system complexity underestimated",
+        "labels":  [
+                       "type:risk",
+                       "P1:high"
+                   ],
+        "milestone":  "M6: Special Throws"
+    },
+    {
+        "body":  "character_controller.gd mentions state machine but no state list or transition rules. States: Idle, Run, Jump, Throw, Catch, Dodge, Hit, KnockBack, GetUp, Dead, InOutfieldTransition...",
+        "title":  "[RISK-07] Character state machine not detailed",
+        "labels":  [
+                       "type:risk",
+                       "area:character",
+                       "P1:high"
+                   ],
+        "milestone":  "M1: Character Move"
+    },
+    {
+        "body":  "Total ~48 days for 48 chars, 8 teams, multi-mode, cross-platform game is short. High risk: AI 5d, Art 7d, Mobile adapt 5d.",
+        "title":  "[RISK-08] Time estimates overly optimistic",
+        "labels":  [
+                       "type:risk",
+                       "P1:high"
+                   ],
+        "milestone":  ""
+    },
+    {
+        "body":  "No unit/integration/QA test plan. Collision and damage calculations need automated verification.",
+        "title":  "[RISK-09] No testing strategy",
+        "labels":  [
+                       "type:risk",
+                       "P2:medium"
+                   ],
+        "milestone":  "M11: Polish Release"
+    },
+    {
+        "body":  "NES 256x240 vs mobile 16:9/19.5:9/4:3. No scaling strategy defined. Godot stretch_mode/stretch_aspect must be configured early.",
+        "title":  "[RISK-10] Resolution adaptation strategy undefined",
+        "labels":  [
+                       "type:risk",
+                       "P2:medium"
+                   ],
+        "milestone":  "M0: Project Setup"
+    },
+    {
+        "body":  "No scene transition manager. Original has pre-match anim, team intro, halftime. Not reflected in project structure.",
+        "title":  "[RISK-11] No scene transition management",
+        "labels":  [
+                       "type:risk",
+                       "area:ui",
+                       "P2:medium"
+                   ],
+        "milestone":  "M7: Teams and Modes"
+    },
+    {
+        "body":  "NES remake has copyright risk. Original by Technos Japan, rights held by Arc System Works. Must clarify: tribute (original assets) vs direct remake.",
+        "title":  "[RISK-12] Copyright compliance risk",
+        "labels":  [
+                       "type:risk",
+                       "P2:medium"
+                   ],
+        "milestone":  ""
+    },
+    {
+        "body":  "GDD mentions Bean Ball mode but no rules described. Cannot implement an undefined mode.",
+        "title":  "[RISK-13] Bean Ball mode rules undefined",
+        "labels":  [
+                       "type:risk",
+                       "type:design",
+                       "P2:medium"
+                   ],
+        "milestone":  "M7: Teams and Modes"
+    },
+    {
+        "body":  ".gitignore for Godot 4 needed (.godot/, *.import). No CI/CD plan. (.gitignore now created)",
+        "title":  "[RISK-14] Version control config missing",
+        "labels":  [
+                       "type:risk",
+                       "type:infra",
+                       "P3:low"
+                   ],
+        "milestone":  "M0: Project Setup"
+    },
+    {
+        "body":  "Game title in Japanese, target mobile may be global. No localization strategy mentioned.",
+        "title":  "[RISK-15] No localization strategy",
+        "labels":  [
+                       "type:risk",
+                       "P3:low"
+                   ],
+        "milestone":  "M8: UI and Art"
+    },
+    {
+        "body":  "Only local 2P mentioned. If online needed later, architecture must consider input/state sync now.",
+        "title":  "[RISK-16] Online multiplayer extensibility not considered",
+        "labels":  [
+                       "type:risk",
+                       "P3:low"
+                   ],
+        "milestone":  ""
+    }
+]

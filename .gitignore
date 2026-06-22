@@ -9,10 +9,12 @@ Desktop.ini
 .DS_Store
 
 # IDE
-.windsurf/
 *.swp
 *.swo
 *~
+
+# Secrets
+scripts/.github-token
 
 # Build
 android/build/
