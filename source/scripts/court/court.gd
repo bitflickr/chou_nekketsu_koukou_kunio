@@ -26,6 +26,10 @@ var _ball: Ball
 var _left_team: Array[Character] = []
 var _right_team: Array[Character] = []
 
+# --- M5：AI 控制器 ---
+var _ai_controllers: Array[AIController] = []
+var _ai_difficulty := Constants.AIDifficulty.NORMAL
+
 # --- 调试：敌方自动投球（验证玩家方受击与内外场转移）。按 T 切换。---
 const AUTO_THROW_INTERVAL := 2.5
 var _auto_throw_on := false
@@ -38,6 +42,7 @@ func _ready() -> void:
 	randomize()
 	_spawn_teams()
 	_spawn_ball()
+	_spawn_ai()
 	_spawn_ui()
 	# 等待一帧确保所有角色 _ready 完成后再注册并开球
 	GameManager.setup_match(_left_team, _right_team, _ball)
@@ -99,6 +104,30 @@ func _spawn_ball() -> void:
 
 
 # ---------------------------------------------------------------------------
+# AI 控制器（SP-M05）
+# ---------------------------------------------------------------------------
+
+## 为所有非玩家角色挂载 AIController（含玩家方队友），构成完整可对战的比赛。
+func _spawn_ai() -> void:
+	for c in _left_team + _right_team:
+		if c == _player:
+			continue
+		var ai := AIController.new()
+		ai.name = "AI_%s_%d" % ["L" if c.is_left_team else "R", c.get_index()]
+		ai.setup(c, _ball, _ai_difficulty)
+		character_layer.add_child(ai)
+		_ai_controllers.append(ai)
+
+
+func _set_ai_difficulty(diff: int) -> void:
+	_ai_difficulty = clampi(diff, 0, AIController.DIFFICULTY.size() - 1)
+	for ai in _ai_controllers:
+		if is_instance_valid(ai):
+			ai.set_difficulty(_ai_difficulty)
+	_update_hint()
+
+
+# ---------------------------------------------------------------------------
 # UI
 # ---------------------------------------------------------------------------
 
@@ -121,7 +150,10 @@ func _spawn_hint_label() -> void:
 
 func _update_hint() -> void:
 	if _hint_label != null:
-		_hint_label.text = "ENEMY AUTO-THROW: %s (T) | RESET (R)" % ["ON" if _auto_throw_on else "OFF"]
+		var diff_names := ["EASY", "NORMAL", "HARD", "EXPERT"]
+		_hint_label.text = "AI: %s (1-4) | AI-DBG: %s (Y) | RESET (R)" % [
+			diff_names[_ai_difficulty], "ON" if AIController.debug_draw else "OFF",
+		]
 
 
 func _spawn_reset_button() -> void:
@@ -141,12 +173,24 @@ func _reset() -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
-		if event.physical_keycode == KEY_R:
-			_reset()
-		elif event.physical_keycode == KEY_T:
-			_auto_throw_on = not _auto_throw_on
-			_auto_throw_t = 0.0
-			_update_hint()
+		match event.physical_keycode:
+			KEY_R:
+				_reset()
+			KEY_T:
+				_auto_throw_on = not _auto_throw_on
+				_auto_throw_t = 0.0
+				_update_hint()
+			KEY_Y:
+				AIController.debug_draw = not AIController.debug_draw
+				_update_hint()
+			KEY_1:
+				_set_ai_difficulty(Constants.AIDifficulty.EASY)
+			KEY_2:
+				_set_ai_difficulty(Constants.AIDifficulty.NORMAL)
+			KEY_3:
+				_set_ai_difficulty(Constants.AIDifficulty.HARD)
+			KEY_4:
+				_set_ai_difficulty(Constants.AIDifficulty.EXPERT)
 
 
 # ---------------------------------------------------------------------------

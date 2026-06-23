@@ -67,6 +67,14 @@ var down_timer := 0                  # 倒地剩余帧
 var knockback_vel := Vector2.ZERO    # 击退速度（px/秒）
 var last_attacker: Character = null  # 最近一次击中本角色的投球者（用于反杀判定 SP-M04.4）
 
+# --- M5 AI 意图注入 ---
+# player_controlled=false 时，由 AIController 每帧写入下列意图，复用角色既有状态机。
+# ai_move 为期望移动向量（连续值）；ai_jump / ai_catch 为单帧边沿信号，被本帧消费后清零。
+var ai_move := Vector2.ZERO
+var ai_jump := false
+var ai_catch := false
+var ai_crouch := false
+
 @onready var _collision: CollisionShape2D = $CollisionShape2D
 
 # 队伍配色（占位）
@@ -110,6 +118,14 @@ func _physics_process(delta: float) -> void:
 		jump_pressed = GameInput.is_just_pressed(GameInput.JUMP)
 		catch_pressed = GameInput.is_just_pressed(GameInput.THROW)
 		crouch_held = GameInput.is_pressed(GameInput.CROUCH)
+	else:
+		# AI 意图（由 AIController 注入）。边沿信号消费后立即清零，避免重复触发。
+		move_dir = ai_move
+		jump_pressed = ai_jump
+		catch_pressed = ai_catch
+		crouch_held = ai_crouch
+		ai_jump = false
+		ai_catch = false
 
 	# 下蹲（しゃがむ）：仅地面、未持球时；期间不可移动/跳跃/接球，可躲直线球
 	if _update_crouch(crouch_held):
